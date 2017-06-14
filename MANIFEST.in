@@ -1,0 +1,2 @@
+include versioneer.py
+include local-volume-db/_version.py
