@@ -166,6 +166,7 @@ class Database(object):
 		if best in data:
 			if self.table_exists('glossarytest') == False:
 				self.execute('CREATE TABLE glossarytest (key varchar(255));')
+				self.execute('GRANT SELECT ON glossarytest TO public;')
 			else:pass
 
 			glossary_tables = self.get_columns('SELECT * FROM glossarytest;')
