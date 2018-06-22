@@ -162,6 +162,10 @@ class Database(object):
 			raise(e)
 
 		if 'temp_best' in data:
+			if self.table_exists('glossarytest') == False:
+				self.execute('CREATE TABLE glossarytest (key varchar(255));')
+			else:pass
+			
 			glossary_tables = self.get_columns('SELECT * FROM glossarytest;')
 			if table not in glossary_tables:
 				self.execute('ALTER TABLE glossarytest ADD '+str(table)+' DOUBLE PRECISION;')
