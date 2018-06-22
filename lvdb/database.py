@@ -107,7 +107,7 @@ class Database(object):
 
 	def connect(self):
 		#self.connection = psycopg2.connect(**self.conninfo)
-		self.connection = psycopg2.connect("localhost dbname=local-volume")
+		self.connection = psycopg2.connect("host=des51.fnal.gov dbname=local-volume user=jmaner33")
 		self.connection.autocommit = True
 		self.cursor = self.connection.cursor()
 
@@ -134,7 +134,7 @@ class Database(object):
 
 		self.execute(query, values)
 
-	def load_data(self, table, data, option=None):
+	def load_data(self, table, data, option=None, **kwargs):
 		"""Load a numpy.recarray or pandas.DataFrame into a table.
 
 		Parameters:
@@ -153,7 +153,9 @@ class Database(object):
 					  option=option)
 		query = "COPY %(table)s (%(columns)s) FROM STDIN WITH CSV HEADER %(option)s;"%params
 		logging.debug(query)
-	 
+	 	
+		best = kwargs.get('best')
+		
 		try:
 			self.cursor.copy_expert(query,tmp)
 		except psycopg2.DataError as e:
@@ -161,17 +163,17 @@ class Database(object):
 			import pdb; pdb.set_trace()
 			raise(e)
 
-		if 'temp_best' in data:
+		if best in data:
 			if self.table_exists('glossarytest') == False:
 				self.execute('CREATE TABLE glossarytest (key varchar(255));')
 			else:pass
-			
+
 			glossary_tables = self.get_columns('SELECT * FROM glossarytest;')
 			if table not in glossary_tables:
 				self.execute('ALTER TABLE glossarytest ADD '+str(table)+' DOUBLE PRECISION;')
 		
 			glossary = self.query2rec('SELECT * FROM glossarytest;')
-			tb_idkey = self.query2rec('SELECT key,id FROM '+str(table)+' WHERE temp_best = 1;')
+			tb_idkey = self.query2rec('SELECT key,id FROM '+str(table)+' WHERE '+str(best)+' = 1;')
 			new_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == False)]
 			old_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == True)]
 
