@@ -146,7 +146,7 @@ class Database(object):
 			data = pd.DataFrame(data)
 		
 		tmp = tempfile.NamedTemporaryFile(suffix='.csv')
-		data.to_csv(tmp.name,index=False)
+		data.to_csv(tmp.name,index=False,encoding='utf-8')
 		logging.debug("Creating temporary file: %s"%tmp.name)
 		if option is None: option = ''
 		params = dict(table=table,columns=','.join(data.columns),
