@@ -136,7 +136,6 @@ class Database(object):
 
 	def load_data(self, table, data, option=None, **kwargs):
 		"""Load a numpy.recarray or pandas.DataFrame into a table.
-
 		Parameters:
 		-----------
 		table	: The name of the table to load.
@@ -155,7 +154,8 @@ class Database(object):
 		logging.debug(query)
 	 	
 		best = kwargs.get('best')
-		
+		master = kwargs.get('master')
+
 		try:
 			self.cursor.copy_expert(query,tmp)
 		except psycopg2.DataError as e:
@@ -164,26 +164,29 @@ class Database(object):
 			raise(e)
 
 		if best in data:
-			if self.table_exists('glossarytest') == False:
-				self.execute('CREATE TABLE glossarytest (key varchar(255));')
-				self.execute('GRANT SELECT ON glossarytest TO public;')
+			if self.table_exists(master) == False:
+				self.execute('CREATE TABLE '+str(master)+' (key varchar(50));')
+				self.execute('GRANT SELECT ON '+str(master)+' TO public;')
 			else:pass
 
-			glossary_tables = self.get_columns('SELECT * FROM glossarytest;')
+			glossary_tables = self.get_columns('SELECT * FROM '+str(master)+';')
 			if table not in glossary_tables:
-				self.execute('ALTER TABLE glossarytest ADD '+str(table)+' DOUBLE PRECISION;')
+				self.execute('ALTER TABLE '+str(master)+' ADD '+str(table)+' DOUBLE PRECISION;')
 		
-			glossary = self.query2rec('SELECT * FROM glossarytest;')
+			glossary = self.query2rec('SELECT * FROM '+str(master)+';')
 			tb_idkey = self.query2rec('SELECT key,id FROM '+str(table)+' WHERE '+str(best)+' = 1;')
 			new_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == False)]
 			old_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == True)]
 
 			for new_key,new_id in zip(new_keys['key'],new_keys['id']):
-				self.execute('INSERT INTO glossarytest (key,'+str(table)+') VALUES (\''+str(new_key)+'\',\''+str(new_id)+'\');')
+				self.execute('INSERT INTO '+str(master)+' (key,'+str(table)+') VALUES (\''+str(new_key)+'\',\''+str(new_id)+'\');')
 			for old_key,new_id in zip(old_keys['key'],old_keys['id']):
-				self.execute('UPDATE glossarytest SET '+str(table)+' = '+str(new_id)+' WHERE key =\''+str(old_key)+'\';')
+				self.execute('UPDATE '+str(master)+' SET '+str(table)+' = '+str(new_id)+' WHERE key =\''+str(old_key)+'\';')
+			self.execute('ALTER TABLE '+str(table)+' DROP COLUMN '+str(best)+'')
 		else:pass
 		del tmp
+
+
 
 	def create_table_query(self, **kwargs):
 		table = kwargs['table']
