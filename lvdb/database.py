@@ -154,7 +154,7 @@ class Database(object):
 		logging.debug(query)
 	 	
 		best = kwargs.get('best')
-		master = kwargs.get('master')
+		tag = kwargs.get('tag')
 
 		try:
 			self.cursor.copy_expert(query,tmp)
@@ -164,24 +164,24 @@ class Database(object):
 			raise(e)
 
 		if best in data:
-			if self.table_exists(master) == False:
-				self.execute('CREATE TABLE '+str(master)+' (key varchar(50));')
-				self.execute('GRANT SELECT ON '+str(master)+' TO public;')
+			if self.table_exists(tag) == False:
+				self.execute('CREATE TABLE '+str(tag)+' (key varchar(50));')
+				self.execute('GRANT SELECT ON '+str(tag)+' TO PUBLIC;')
 			else:pass
 
-			glossary_tables = self.get_columns('SELECT * FROM '+str(master)+';')
+			glossary_tables = self.get_columns('SELECT * FROM '+str(tag)+';')
 			if table not in glossary_tables:
-				self.execute('ALTER TABLE '+str(master)+' ADD '+str(table)+' DOUBLE PRECISION;')
+				self.execute('ALTER TABLE '+str(tag)+' ADD '+str(table)+' DOUBLE PRECISION;')
 		
-			glossary = self.query2rec('SELECT * FROM '+str(master)+';')
+			glossary = self.query2rec('SELECT * FROM '+str(tag)+';')
 			tb_idkey = self.query2rec('SELECT key,id FROM '+str(table)+' WHERE '+str(best)+' = 1;')
 			new_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == False)]
 			old_keys = tb_idkey[np.where(np.in1d(tb_idkey['key'],glossary['key']) == True)]
 
 			for new_key,new_id in zip(new_keys['key'],new_keys['id']):
-				self.execute('INSERT INTO '+str(master)+' (key,'+str(table)+') VALUES (\''+str(new_key)+'\',\''+str(new_id)+'\');')
+				self.execute('INSERT INTO '+str(tag)+' (key,'+str(table)+') VALUES (\''+str(new_key)+'\',\''+str(new_id)+'\');')
 			for old_key,new_id in zip(old_keys['key'],old_keys['id']):
-				self.execute('UPDATE '+str(master)+' SET '+str(table)+' = '+str(new_id)+' WHERE key =\''+str(old_key)+'\';')
+				self.execute('UPDATE '+str(tag)+' SET '+str(table)+' = '+str(new_id)+' WHERE key =\''+str(old_key)+'\';')
 			self.execute('ALTER TABLE '+str(table)+' DROP COLUMN '+str(best)+'')
 		else:pass
 		del tmp
