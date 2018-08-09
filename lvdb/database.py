@@ -107,7 +107,7 @@ class Database(object):
 
 	def connect(self):
 		#self.connection = psycopg2.connect(**self.conninfo)
-		self.connection = psycopg2.connect("host=des51.fnal.gov dbname=local-volume user=jmaner33")
+        	self.connection = psycopg2.connect("host=localhost dbname=local-volume")
 		self.connection.autocommit = True
 		self.cursor = self.connection.cursor()
 
