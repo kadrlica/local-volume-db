@@ -295,7 +295,85 @@ class Database(object):
 			return np.rec.array(data,dtype=dtypes)
 
 	query2recarray = query2rec
+	
+	def query2bib(self, query):
+		data = self.query2rec(query)
+		ref = np.unique(data['ref'])
+		
+		#make sure the arXiv codes are not included in the query.
+		from bs4 import BeautifulSoup as BS
+		import urllib2
+		import sys
+		missing = []
+		bibout = []
+		print
+		for i, x in enumerate(ref):
+			x = x.replace(' ', '')
+			sys.stdout.write("\033[F")
+			print(str(i + 1) + " of " + str(len(ref)))
+			try:
+				html = urllib2.urlopen('http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=' + x + '&data_type=BIBTEX&db_key=AST&nocookieset=1')			
+				soup = BS(html, "html5lib")
+				soup = soup.text
+				soup = soup.split("\n", 4)[4]
+    				soup = soup + '\n'
+	    			bibout.append(soup)
+			except urllib2.HTTPError, e:
+				missing.append(x)
+				#print(e)
 
+		if missing == []:
+			print
+			print("All bibcodes read and returned as bibout.")
+		else:		
+			print
+			print("The following bibcodes did not return an ADS bibliography.")
+			print(missing)
+			print("All other bibcodes have been read and returned as bibout.")
+		return bibout
+
+	def query2bibtex(self, query, fname):
+		#pulls data from database, selects the references.
+		data = self.query2rec(query)
+		ref = np.unique(data['ref'])
+		
+		from bs4 import BeautifulSoup as BS
+		import urllib2
+		import sys
+		#bibout is an array with all bibliographies that can be called instead of printing a file.
+		bibout = []
+		#missing contains 
+		missing = []
+		print
+		for i, x in enumerate(ref):
+			x = x.replace(' ', '')
+   			#this is an actual loading bar. Prints "i of x", and clears the previous line.
+			sys.stdout.write("\033[F")
+			print(str(i + 1) + " of " + str(len(ref)))
+			try:
+				#opens the url with the bibcode, accesses the html file with bs, cleans up the bibliography, and writes to a file with the user specified name.
+				html = urllib2.urlopen('http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=' + x + '&data_type=BIBTEX&db_key=AST&nocookieset=1')		
+				soup = BS(html, "html5lib")
+				soup = soup.text
+				soup = soup.split("\n", 4)[4]
+    				soup = soup + '\n'
+				bibout.append(soup)
+				with open(fname, 'a') as myfile:
+		        		myfile.write(soup)
+		        		myfile.write('\n')
+		        		myfile.write('')
+			except urllib2.HTTPError, e:
+				missing.append(x)
+				#prints an annoying 404 error if bibcode does not have ads entry. commented out for user sanity.
+				#print(e)
+		if missing == []:
+			print
+			print("All bibcodes read and written to:  " + str(fname))
+		else:		
+			print
+			print("The following bibcodes did not return an ADS bibliography.")
+			print(missing)
+			print("All other bibcodes have been read and written to:  " + str(fname))
 
 if __name__ == "__main__":
 	import argparse
